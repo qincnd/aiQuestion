@@ -1,16 +1,22 @@
 {
-  "answer_time": 5.0,
-  "interval_min_time": 0.2,
-  "interval_max_time": 0.6,
-  "error_time": 1.2,
-  "click_error_distance": 2,
-  "page_load_timeout": 8.0,
-  "screen_poll_interval": 0.15,
-  "notify_on_submit": true,
-  "send_image_to_model": true,
-  "adb_path": "",
-  "device_serial": "",
-  "api_key": "",
-  "model": "deepseek-flash",
-  "api_base": "https://api.deepseek.com"
+  "ai": {
+    "api_key": "test",
+    "base_url": "http://127.0.0.1:8080/v1",
+    "model": "qwen2",
+    "temperature": 0,
+    "max_tool_rounds": 20,
+    "system_prompt": "你是一个手机答题助手，通过工具读取页面、点击选项、进入下一题，直到完成所有题目。"
+  },
+  "bot": {
+    "adb_path": "",
+    "device_serial": "",
+    "answer_time": 15,
+    "error_time": 0.8,
+    "interval_min_time": 0.2,
+    "interval_max_time": 0.6,
+    "page_load_timeout": 8,
+    "screen_poll_interval": 0.25,
+    "click_error_distance": 2,
+    "notify_on_submit": true
+  }
 }

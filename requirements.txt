@@ -1,6 +1,4 @@
-Flask>=3.0,<4
-Pillow>=10.0
-numpy>=1.26
-rapidocr_onnxruntime==1.2.3
-requests>=2.32
-winotify>=1.1
+flask
+openai
+adbutils
+winotify; sys_platform == "win32"

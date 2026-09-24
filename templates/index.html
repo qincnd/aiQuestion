@@ -1,3 +1,11 @@
+<!--
+// SPDX-FileCopyrightText: 2026 qincnd <qincnd@qq.com>
+// SPDX-FileCopyrightText: 2026 Xue Zicheng <xuezicheng842@outlook.com>
+// SPDX-License-Identifier: MIT
+//
+// Original code created by qincnd <qincnd@qq.com>
+// Modified by Xue Zicheng <xuezicheng842@outlook.com>
+-->
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -12,53 +20,120 @@
       <div>
         <p class="eyebrow">ADB / DEEPSEEK AUTOMATION</p>
         <h1>AI 答题控制台</h1>
-        <p class="subtitle">读取手机屏幕，理解题目并执行可控的模拟点击。</p>
+        <p class="subtitle">通过 MCP 工具调用，让 AI 自主读题、答题、进入下一题。</p>
       </div>
       <div id="statusPill" class="status-pill idle"><span></span>未运行</div>
     </header>
 
-    <section class="workspace">
-      <form id="configForm" class="panel settings">
-        <div class="panel-heading"><span>01</span><h2>任务参数</h2></div>
-        <div class="field-grid">
-          <label>单题答题时间（秒）<input name="answer_time" type="number" min="1" step="0.1" value="15"></label>
-          <label>题目间隔最短时间（秒）<input name="interval_min_time" type="number" min="0" step="0.1" value="0.2"></label>
-          <label>题目间隔最长时间（秒）<input name="interval_max_time" type="number" min="0" step="0.1" value="0.6"></label>
-          <label>时间误差范围（秒）<input name="error_time" type="number" min="0" step="0.1" value="0.8"></label>
-          <label>点击误差距离（像素）<input name="click_error_distance" type="number" min="0" step="1" value="2"></label>
-          <label>页面加载上限（秒）<input name="page_load_timeout" type="number" min="1" step="0.5" value="8"></label>
-          <label>截图轮询间隔（秒）<input name="screen_poll_interval" type="number" min="0.1" step="0.05" value="0.15"></label>
-        </div>
-        <label class="toggle-row"><input name="notify_on_submit" type="checkbox" checked><span>到达提交页面时发送 Windows 通知（不会自动提交）</span></label>
-        <label class="toggle-row"><input name="send_image_to_model" type="checkbox"><span>将手机截图直接发送给视觉模型（需使用支持图片的模型）</span></label>
-        <div class="panel-heading second"><span>02</span><h2>连接与模型</h2></div>
-        <label>ADB 路径<input name="adb_path" placeholder="留空使用 PATH，或填写 tools/adb.exe"></label>
-        <label>设备序列号（可选）<input name="device_serial" placeholder="多台设备时填写 adb devices 中的序列号"></label>
-        <label>DeepSeek API Key<input name="api_key" type="password" placeholder="sk-..." autocomplete="off"></label>
-        <div class="inline-fields">
-          <label>模型<input name="model" value="deepseek-flash"></label>
-          <label>API 地址<input name="api_base" value="https://api.deepseek.com"></label>
-        </div>
+    <!-- ============ 运行面板 ============ -->
+    <section id="tab-run" class="workspace">
+      <div class="panel settings">
+        <div class="panel-heading"><span>RUN</span><h2>任务控制</h2></div>
         <div class="actions">
-          <button id="startButton" class="primary" type="submit">开始答题</button>
-          <button id="saveButton" class="secondary" type="button">保存当前参数</button>
+          <button id="startButton" class="primary" type="button">
+            <svg class="run-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M8 5v14l11-7z" fill="currentColor"/>
+            </svg>
+            <span>开始答题</span>
+          </button>
           <button id="stopButton" class="secondary" type="button">停止</button>
         </div>
-        <p class="save-status" id="saveStatus" role="status" aria-live="polite"></p>
-        <p class="hint">保存参数会将当前配置（包括 API Key）写入本地 config.json。多选题会逐项点击；图片模式需确认当前模型支持视觉输入。</p>
-      </form>
+        <p class="hint">开始前请确认「设置」页配置正确，并已连接手机（USB 调试已授权）。</p>
+      </div>
 
       <aside class="panel monitor">
         <div class="panel-heading"><span>LIVE</span><h2>运行监视</h2></div>
         <div class="message" id="message">等待开始</div>
-        <div class="screenshot-frame"><img id="screenImage" alt="当前手机屏幕截图" hidden><div id="screenPlaceholder">暂无手机截图</div></div>
         <div class="readout"><p>最近识别文本</p><pre id="screenText">暂无</pre></div>
-        <div class="readout"><p>最近模型结果</p><pre id="lastAnswer">暂无</pre></div>
+        <div class="readout"><p>AI 对话 / 工具调用</p><pre id="aiLog">暂无</pre></div>
       </aside>
     </section>
-    <footer>本地服务 · 127.0.0.1:5050
-      <br>Power by qincnd
-    </footer>
+
+    <!-- ============ 设置面板 ============ -->
+    <section id="tab-settings" class="settings-page" hidden>
+      <form id="configForm" class="panel">
+        <div class="panel-heading"><span>01</span><h2>AI 模型</h2></div>
+        <div class="field-grid">
+          <label>API Key
+            <input name="ai.api_key" type="password" placeholder="sk-..." autocomplete="off">
+          </label>
+          <label>API 地址
+            <input name="ai.base_url" placeholder="https://api.deepseek.com">
+          </label>
+          <label>模型
+            <input name="ai.model" placeholder="deepseek-chat">
+          </label>
+          <label>Temperature
+            <input name="ai.temperature" type="number" step="0.1" min="0" max="2" placeholder="0.0">
+          </label>
+          <label>最大工具调用轮数
+            <input name="ai.max_tool_rounds" type="number" step="1" min="1" placeholder="20">
+          </label>
+        </div>
+        <label>System Prompt
+          <textarea name="ai.system_prompt" rows="4"
+            placeholder="你是一个手机答题助手，通过工具读取页面、点击选项、进入下一题，直到完成所有题目。"></textarea>
+        </label>
+
+        <div class="panel-heading second"><span>02</span><h2>设备与 ADB</h2></div>
+        <div class="field-grid">
+          <label>ADB 路径
+            <input name="bot.adb_path" placeholder="留空使用 PATH，或填写 tools/adb.exe">
+          </label>
+          <label>设备序列号（可选）
+            <input name="bot.device_serial" placeholder="多台设备时填写 adb devices 中的序列号">
+          </label>
+        </div>
+
+        <div class="panel-heading second"><span>03</span><h2>答题节奏</h2></div>
+        <div class="field-grid">
+          <label>单题答题时间（秒）
+            <input name="bot.answer_time" type="number" min="1" step="0.1" value="15">
+          </label>
+          <label>时间误差范围（秒）
+            <input name="bot.error_time" type="number" min="0" step="0.1" value="0.8">
+          </label>
+          <label>题目间隔最短（秒）
+            <input name="bot.interval_min_time" type="number" min="0" step="0.1" value="0.2">
+          </label>
+          <label>题目间隔最长（秒）
+            <input name="bot.interval_max_time" type="number" min="0" step="0.1" value="0.6">
+          </label>
+          <label>页面加载上限（秒）
+            <input name="bot.page_load_timeout" type="number" min="1" step="0.5" value="8">
+          </label>
+          <label>轮询间隔（秒）
+            <input name="bot.screen_poll_interval" type="number" min="0.1" step="0.05" value="0.25">
+          </label>
+          <label>点击误差距离（像素）
+            <input name="bot.click_error_distance" type="number" min="0" step="1" value="2">
+          </label>
+        </div>
+        <label class="toggle-row">
+          <input name="bot.notify_on_submit" type="checkbox">
+          <span>到达提交页面时发送 Windows 通知（不会自动提交）</span>
+        </label>
+
+        <div class="actions">
+          <button id="saveButton" class="primary" type="button">保存配置</button>
+          <button id="reloadButton" class="secondary" type="button">重新加载</button>
+          <button id="rawToggle" class="secondary" type="button">高级：编辑 JSON</button>
+        </div>
+        <p class="save-status" id="saveStatus" role="status" aria-live="polite"></p>
+      </form>
+
+      <div id="rawPanel" class="panel" hidden>
+        <div class="panel-heading"><span>RAW</span><h2>原始 JSON</h2></div>
+        <p class="hint">直接编辑整段 config.json。保存后会覆盖表单内容。</p>
+        <textarea id="rawEditor" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="rawSave" class="primary" type="button">保存 JSON</button>
+          <button id="rawBack" class="secondary" type="button">返回表单</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>本地服务 · 127.0.0.1:5050<br>Power by <a href="https://github.com/qincnd">qincnd</a>,<a href="https://github.com/xzc842">xzc842</a> <a href="https://spdx.org/licenses/MIT.html">MIT LICENSE</a></footer>
   </main>
   <script src="/static/app.js"></script>
 </body>

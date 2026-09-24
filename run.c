@@ -1,3 +1,4 @@
+//保留，c语言编写的启动器
 #include <stdio.h>
 #include <stdlib.h>
 
